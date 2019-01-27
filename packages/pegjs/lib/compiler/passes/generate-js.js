@@ -672,7 +672,7 @@ function generateJS( ast, session, options ) {
             const parts = [];
             let value;
 
-            function compileCondition( cond, argCount ) {
+            function compileCondition( cond, argCount, thenInsert = null, elseInsert = null) {
 
                 const pos = ip;
                 const baseLength = argCount + 3;
@@ -708,10 +708,18 @@ function generateJS( ast, session, options ) {
 
                 parts.push( "if (" + cond + ") {" );
                 parts.push( indent2( thenCode ) );
+                if ( thenInsert ) {
+
+                  parts.push( indent2( thenInsert ) );
+
+                }
                 if ( elseLength > 0 ) {
 
                     parts.push( "} else {" );
                     parts.push( indent2( elseCode ) );
+                    if ( elseInsert ) {
+                      parts.push( indent2( elseInsert ) );
+                    }
 
                 }
                 parts.push( "}" );
@@ -876,10 +884,79 @@ function generateJS( ast, session, options ) {
                         break;
 
                     case op.MATCH_ANY:          // MATCH_ANY a, f, ...
-                        compileCondition( "input.length > peg$currPos", 0 );
+                          //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "string.enter",',
+                                '  rule:     ".",',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
+
+                          //:ext-trace:
+                        var thenInsert = null;
+                        var elseInsert = null;
+                        if(options.trace) {
+
+                            thenInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.match",',
+                                '  rule:     ".".toString(),',
+                                '  location: peg$computeLocation(peg$currPos - 1, peg$currPos)',
+                                '});'
+                            ].join('\n');
+
+                            elseInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.fail",',
+                                '  rule:     ".".toString(),',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos + 1)',
+                                '});'
+                            ].join('\n');
+
+                        }
+                        compileCondition( "input.length > peg$currPos",
+                            0,
+                                //:ext-trace:
+                            thenInsert,
+                            elseInsert);
                         break;
 
                     case op.MATCH_STRING:       // MATCH_STRING s, a, f, ...
+                            //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "string.enter",',
+                                '  rule:     ' + l(bc[ip + 1]) + ',',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
+
+                            //:ext-trace:
+                        var thenInsert = null;
+                        var elseInsert = null;
+                        if(options.trace) {
+                            thenInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.match",',
+                                '  rule:     ' + l(bc[ip + 1]) + ',',
+                                '  location: peg$computeLocation(peg$currPos - ' + ast.literals[bc[ip + 1]].length + ', peg$currPos)',
+                                '});'
+                            ].join('\n');
+
+                            elseInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.fail",',
+                                '  rule:     ' + l(bc[ip + 1]) + ',',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos + ' + ast.literals[bc[ip + 1]].length + ')',
+                                '});'
+                            ].join('\n');
+                        }
+
                         compileCondition(
                             ast.literals[ bc[ ip + 1 ] ].length > 1
                                 ? "input.substr(peg$currPos, "
@@ -888,22 +965,94 @@ function generateJS( ast, session, options ) {
                                     + l( bc[ ip + 1 ] )
                                 : "input.charCodeAt(peg$currPos) === "
                                     + ast.literals[ bc[ ip + 1 ] ].charCodeAt( 0 )
-                            , 1
+                            , 1,
+                                //:ext-trace:
+                            thenInsert,
+                            elseInsert
                         );
                         break;
 
                     case op.MATCH_STRING_IC:    // MATCH_STRING_IC s, a, f, ...
+                            //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "string.enter",',
+                                '  rule:     ' + l(bc[ip + 1]) + ',',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
+
+                            //:ext-trace:
+                        var thenInsert = null;
+                        var elseInsert = null;
+                        if(options.trace) {
+                            thenInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.match",',
+                                '  rule:     ' + l(bc[ip + 1]) + ',',
+                                '  location: peg$computeLocation(peg$currPos - ' + ast.literals[ bc[ ip + 1 ] ].length + ', peg$currPos)',
+                                '});'
+                            ].join('\n');
+
+                            elseInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.fail",',
+                                '  rule:     ' + l(bc[ip + 1]) + ',',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos + ' + ast.literals[ bc[ ip + 1 ] ].length + ')',
+                                '});'
+                            ].join('\n');
+                        }
+
                         compileCondition(
                             "input.substr(peg$currPos, "
                                 + ast.literals[ bc[ ip + 1 ] ].length
                                 + ").toLowerCase() === "
                                 + l( bc[ ip + 1 ] )
-                            , 1
+                            , 1,
+                                //:ext-trace:
+                            thenInsert,
+                            elseInsert
                         );
                         break;
 
                     case op.MATCH_CLASS:        // MATCH_CLASS c, a, f, ...
-                        compileCondition( r( bc[ ip + 1 ] ) + ".test(input.charAt(peg$currPos))", 1 );
+                            //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "string.enter",',
+                                '  rule:     ' + r( bc[ ip + 1 ] ) + '.toString(),',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
+
+                        //:ext-trace:
+                        var thenInsert = null;
+                        var elseInsert = null;
+                        if(options.trace) {
+                            thenInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.match",',
+                                '  rule:     ' + r( bc[ ip + 1 ] ) + '.toString(),',
+                                '  location: peg$computeLocation(peg$currPos - 1, peg$currPos)',
+                                '});'
+                            ].join('\n');
+
+                            elseInsert = [
+                                'peg$tracer.trace({',
+                                '  type:     "string.fail",',
+                                '  rule:     ' + r( bc[ ip + 1 ] ) + '.toString(),',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos + 1)',
+                                '});'
+                            ].join('\n');
+                        }
+                        compileCondition( r( bc[ ip + 1 ] ) + ".test(input.charAt(peg$currPos))", 
+                            1,
+                            thenInsert,
+                            elseInsert );
                         break;
 
                     case op.ACCEPT_N:           // ACCEPT_N n
