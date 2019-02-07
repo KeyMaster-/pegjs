@@ -785,6 +785,17 @@ function generateJS( ast, session, options ) {
                         break;
 
                     case op.PUSH_CURR_POS:      // PUSH_CURR_POS
+                          //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "marker.set",',
+                                '  rule:     "' + rule.name + '",',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
+
                         parts.push( stack.push( "peg$currPos" ) );
                         ip++;
                         break;
@@ -815,6 +826,16 @@ function generateJS( ast, session, options ) {
                         break;
 
                     case op.POP_CURR_POS:       // POP_CURR_POS
+                          //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "marker.return",',
+                                '  rule:     "' + rule.name + '",',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
                         parts.push( "peg$currPos = " + stack.pop() + ";" );
                         ip++;
                         break;
@@ -1121,6 +1142,20 @@ function generateJS( ast, session, options ) {
                     case op.EXPECT_NS_END:      // EXPECT_NS_END invert
                         parts.push( "peg$end(" + ( bc[ ip + 1 ] !== 0 ) + ");" );
                         ip += 2;
+                        break;
+
+                    case op.COMMIT_ADVANCE:     // COMMIT_ADVANCE
+                            //:ext-trace:
+                        if(options.trace) {
+                            parts.push([
+                                'peg$tracer.trace({',
+                                '  type:     "marker.discard",',
+                                '  rule:     "' + rule.name + '",',
+                                '  location: peg$computeLocation(peg$currPos, peg$currPos)',
+                                '});'
+                            ].join('\n'));
+                        }
+                        ip++;
                         break;
 
                     // istanbul ignore next

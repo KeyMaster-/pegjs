@@ -290,11 +290,13 @@ function generateBytecode( ast, session ) {
                 [ negative ? op.IF_ERROR : op.IF_NOT_ERROR ],
                 buildSequence(
                     [ op.POP ],
+                      negative ? [ op.COMMIT_ADVANCE ] : [], //:ext-trace:
                     [ negative ? op.POP : op.POP_CURR_POS ],
                     [ op.PUSH_UNDEFINED ]
                 ),
                 buildSequence(
                     [ op.POP ],
+                      negative ? [] : [ op.COMMIT_ADVANCE ], //:ext-trace:
                     [ negative ? op.POP_CURR_POS : op.POP ],
                     [ op.PUSH_FAILED ]
                 )
@@ -434,6 +436,7 @@ function generateBytecode( ast, session ) {
                         ),
                         []
                     ),
+                    [ op.COMMIT_ADVANCE ], //:ext-trace:, :todo: test that this is correct
                     [ op.NIP ]
                 );
 
@@ -500,7 +503,7 @@ function generateBytecode( ast, session ) {
                         )
                     );
 
-                return buildSequence( [ op.WRAP, TOTAL_ELEMENTS ], [ op.NIP ] );
+                return buildSequence( [ op.WRAP, TOTAL_ELEMENTS ], [ op.COMMIT_ADVANCE], [ op.NIP ] ); //:ext-trace:
 
             }
 
@@ -556,8 +559,8 @@ function generateBytecode( ast, session ) {
                 buildCondition(
                     node.expression.match|0,
                     [ op.IF_NOT_ERROR ],
-                    buildSequence( [ op.POP ], [ op.TEXT ] ),
-                    [ op.NIP ]
+                    buildSequence( [ op.POP ], [ op.COMMIT_ADVANCE ], [ op.TEXT ] ), //:ext-trace:
+                    buildSequence( [ op.COMMIT_ADVANCE], [ op.NIP ] ) // :ext-trace:, :todo: test that this is correct
                 )
             );
 
