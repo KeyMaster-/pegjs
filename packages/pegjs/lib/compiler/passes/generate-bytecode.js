@@ -500,7 +500,8 @@ function generateBytecode( ast, session ) {
                             TOTAL_ELEMENTS + 1,
                             context.env,
                             context.sp
-                        )
+                        ),
+                        [ op.COMMIT_ADVANCE ]
                     );
 
                 return buildSequence( [ op.WRAP, TOTAL_ELEMENTS ], [ op.COMMIT_ADVANCE], [ op.NIP ] ); //:ext-trace:
